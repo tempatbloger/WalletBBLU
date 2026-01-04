@@ -3,7 +3,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import URL from 'url';
 import { readFileOutsideSandbox } from '../blue_modules/fs';
 import { Chain } from '../models/bitcoinUnits';
-import { BBLU_BECH32_PREFIX, BBLU_URI_SCHEME } from '../blue_modules/bblu-network';
+import { BBLU_BECH32_PREFIX, BBLU_URI_SCHEME, bbluNetwork } from '../blue_modules/bblu-network';
 import { WatchOnlyWallet } from './';
 import Azteco from './azteco';
 import Lnurl from './lnurl';
@@ -306,7 +306,7 @@ class DeeplinkSchemaMatch {
     address = address.replace('://', ':').replace(BBLU_URI_SCHEME + ':', '').replace((BBLU_URI_SCHEME.toUpperCase() + ':'), '').replace(BBLU_URI_SCHEME + '=', '').split('?')[0];
     let isValidBitcoinAddress = false;
     try {
-      bitcoin.address.toOutputScript(address);
+      bitcoin.address.toOutputScript(address, bbluNetwork);
       isValidBitcoinAddress = true;
     } catch (err) {
       isValidBitcoinAddress = false;

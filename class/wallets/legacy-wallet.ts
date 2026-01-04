@@ -408,7 +408,7 @@ export class LegacyWallet extends AbstractWallet {
     for (const t of _targets) {
       if (t.address?.startsWith(BBLU_BECH32_PREFIX)) {
         // in case address is non-typical and takes more bytes than coinselect library anticipates by default
-        t.script = { length: bitcoin.address.toOutputScript(t.address).length + 3 };
+        t.script = { length: bitcoin.address.toOutputScript(t.address, bbluNetwork).length + 3 };
       }
 
       if (t.script?.hex) {
@@ -528,7 +528,7 @@ export class LegacyWallet extends AbstractWallet {
    */
   isAddressValid(address: string): boolean {
     try {
-      bitcoin.address.toOutputScript(address); // throws, no?
+      bitcoin.address.toOutputScript(address, bbluNetwork); // throws, no?
 
       if (!address.toLowerCase().startsWith(BBLU_BECH32_PREFIX)) return true;
       const decoded = bitcoin.address.fromBech32(address);

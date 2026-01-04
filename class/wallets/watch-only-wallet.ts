@@ -2,6 +2,7 @@ import BIP32Factory from 'bip32';
 import * as bitcoin from 'bitcoinjs-lib';
 
 import ecc from '../../blue_modules/noble_ecc';
+import { bbluNetwork } from '../../blue_modules/bblu-network';
 import { AbstractWallet } from './abstract-wallet';
 import { HDLegacyP2PKHWallet } from './hd-legacy-p2pkh-wallet';
 import { HDSegwitBech32Wallet } from './hd-segwit-bech32-wallet';
@@ -61,7 +62,7 @@ export class WatchOnlyWallet extends LegacyWallet {
     if (this.secret.startsWith('xpub') || this.secret.startsWith('ypub') || this.secret.startsWith('zpub')) return this.isXpubValid();
 
     try {
-      bitcoin.address.toOutputScript(this.getAddress());
+      bitcoin.address.toOutputScript(this.getAddress(), bbluNetwork);
       return true;
     } catch (_) {
       return false;

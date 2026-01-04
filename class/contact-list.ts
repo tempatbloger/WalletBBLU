@@ -4,7 +4,7 @@ import { SilentPayment } from 'silent-payments';
 
 import ecc from '../blue_modules/noble_ecc';
 import { concatUint8Arrays } from '../blue_modules/uint8array-extras';
-import { BBLU_BECH32_PREFIX } from '../blue_modules/bblu-network';
+import { BBLU_BECH32_PREFIX, bbluNetwork } from '../blue_modules/bblu-network';
 import * as bitcoin from 'bitcoinjs-lib';
 
 export class ContactList {
@@ -27,7 +27,7 @@ export class ContactList {
 
   isAddressValid(address: string): boolean {
     try {
-      bitcoin.address.toOutputScript(address); // throws, no?
+      bitcoin.address.toOutputScript(address, bbluNetwork); // throws, no?
 
       if (!address.toLowerCase().startsWith(BBLU_BECH32_PREFIX)) return true;
       const decoded = bitcoin.address.fromBech32(address);

@@ -9,6 +9,7 @@ import { LegacyWallet, SegwitBech32Wallet, SegwitP2SHWallet, TaprootWallet } fro
 import presentAlert from '../components/Alert';
 import loc from '../loc';
 import { GROUP_IO_BLUEWALLET } from './currency';
+import { bbluNetwork } from './bblu-network';
 import { ElectrumServerItem } from '../screen/settings/ElectrumSettings';
 import { triggerWarningHapticFeedback } from './hapticFeedback';
 import { AlertButton } from 'react-native';
@@ -485,7 +486,7 @@ async function getRandomDynamicPeer(): Promise<Peer> {
 export const getBalanceByAddress = async function (address: string): Promise<{ confirmed: number; unconfirmed: number }> {
   try {
     if (!mainClient) throw new Error('Electrum client is not connected');
-    const script = bitcoin.address.toOutputScript(address);
+    const script = bitcoin.address.toOutputScript(address, bbluNetwork);
     const hash = bitcoinjs_crypto_sha256(script);
     const reversedHash = new Uint8Array(hash).reverse();
     const balance = await mainClient.blockchainScripthash_getBalance(uint8ArrayToHex(reversedHash));
@@ -513,7 +514,7 @@ export const getSecondsSinceLastRequest = function () {
 
 export const getTransactionsByAddress = async function (address: string): Promise<ElectrumHistory[]> {
   if (!mainClient) throw new Error('Electrum client is not connected');
-  const script = bitcoin.address.toOutputScript(address);
+  const script = bitcoin.address.toOutputScript(address, bbluNetwork);
   const hash = bitcoinjs_crypto_sha256(script);
   const reversedHash = new Uint8Array(hash).reverse();
   const history = await mainClient.blockchainScripthash_getHistory(uint8ArrayToHex(reversedHash));
@@ -526,7 +527,7 @@ export const getTransactionsByAddress = async function (address: string): Promis
 
 export const getMempoolTransactionsByAddress = async function (address: string): Promise<MempoolTransaction[]> {
   if (!mainClient) throw new Error('Electrum client is not connected');
-  const script = bitcoin.address.toOutputScript(address);
+  const script = bitcoin.address.toOutputScript(address, bbluNetwork);
   const hash = bitcoinjs_crypto_sha256(script);
   const reversedHash = new Uint8Array(hash).reverse();
   return mainClient.blockchainScripthash_getMempool(uint8ArrayToHex(reversedHash));
@@ -712,7 +713,7 @@ export const multiGetBalanceByAddress = async (addresses: string[], batchsize: n
     const scripthashes = [];
     const scripthash2addr: Record<string, string> = {};
     for (const addr of chunk) {
-      const script = bitcoin.address.toOutputScript(addr);
+      const script = bitcoin.address.toOutputScript(addr, bbluNetwork);
       const hash = bitcoinjs_crypto_sha256(script);
       const reversedHash = uint8ArrayToHex(new Uint8Array(hash).reverse());
       scripthashes.push(reversedHash);
@@ -756,7 +757,7 @@ export const multiGetUtxoByAddress = async function (addresses: string[], batchs
     const scripthashes = [];
     const scripthash2addr: Record<string, string> = {};
     for (const addr of chunk) {
-      const script = bitcoin.address.toOutputScript(addr);
+      const script = bitcoin.address.toOutputScript(addr, bbluNetwork);
       const hash = bitcoinjs_crypto_sha256(script);
       const reversedHash = uint8ArrayToHex(new Uint8Array(hash).reverse());
       scripthashes.push(reversedHash);
@@ -806,7 +807,7 @@ export const multiGetHistoryByAddress = async function (
     const scripthashes = [];
     const scripthash2addr: Record<string, string> = {};
     for (const addr of chunk) {
-      const script = bitcoin.address.toOutputScript(addr);
+      const script = bitcoin.address.toOutputScript(addr, bbluNetwork);
       const hash = bitcoinjs_crypto_sha256(script);
       const reversedHash = uint8ArrayToHex(new Uint8Array(hash).reverse());
       scripthashes.push(reversedHash);
