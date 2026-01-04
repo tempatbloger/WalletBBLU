@@ -30,6 +30,8 @@ class MarketAPI {
             return "https://www.bnr.ro/nbrfxrates.xml"
         case "Kraken":
             return "https://api.kraken.com/0/public/Ticker?pair=XXBTZ\(endPointKey.uppercased())"
+        case "RabidRabbit":
+            return "https://rabid-rabbit.org/api/public/v1/ticker?format=json"
         default: // CoinDesk
             return "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=\(endPointKey)"
         }
@@ -184,6 +186,8 @@ class MarketAPI {
              let (data, _) = try await URLSession.shared.data(from: url)
              if source == "BNR" {
                  return try await handleBNRData(data: data)
+             } else if source == "RabidRabbit" {
+                 return try await handleRabidRabbitData(data: data, endPointKey: endPointKey)
              } else {
                  return try handleDefaultData(data: data, source: source, endPointKey: endPointKey)
              }
@@ -194,6 +198,53 @@ class MarketAPI {
                  throw error
              }
          }
+     }
+     
+     private static func handleRabidRabbitData(data: Data, endPointKey: String) async throws -> WidgetDataStore? {
+         guard let json = (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any],
+               let bbluUsdtPair = json["BBLU_USDT"] as? [String: Any],
+               let lastPrice = bbluUsdtPair["last_price"] as? Double else {
+             throw CurrencyError(errorDescription: "Data formatting error for RabidRabbit source")
+         }
+         
+         var finalRate = lastPrice
+         
+         // For USDT or USD, use the price directly (USDT is pegged to USD)
+         if endPointKey.uppercased() == "USDT" || endPointKey.uppercased() == "USD" {
+             let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
+             return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
+         }
+         
+         // For other currencies, convert USD to target currency using CoinGecko exchange rates
+         do {
+             let exchangeRatesUrl = URL(string: "https://api.coingecko.com/api/v3/exchange_rates")!
+             let (exchangeData, _) = try await URLSession.shared.data(from: exchangeRatesUrl)
+             if let exchangeJson = try? JSONSerialization.jsonObject(with: exchangeData, options: []) as? [String: Any],
+                let rates = exchangeJson["rates"] as? [String: Any],
+                let targetRate = rates[endPointKey.lowercased()] as? [String: Any],
+                let usdToTargetRate = targetRate["value"] as? Double {
+                 finalRate = lastPrice * usdToTargetRate
+                 let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
+                 return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
+             }
+         } catch {
+             // Fallback: try exchangerate-api
+             do {
+                 let fallbackUrl = URL(string: "https://api.exchangerate-api.com/v4/latest/USD")!
+                 let (fallbackData, _) = try await URLSession.shared.data(from: fallbackUrl)
+                 if let fallbackJson = try? JSONSerialization.jsonObject(with: fallbackData, options: []) as? [String: Any],
+                    let rates = fallbackJson["rates"] as? [String: Double],
+                    let usdToTargetRate = rates[endPointKey.uppercased()] {
+                     finalRate = lastPrice * usdToTargetRate
+                     let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
+                     return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
+                 }
+             } catch {
+                 throw CurrencyError(errorDescription: "Could not convert USD to \(endPointKey)")
+             }
+         }
+         
+         throw CurrencyError(errorDescription: "Could not convert USD to \(endPointKey)")
      }
     
     static func fetchPrice(currency: String, completion: @escaping ((WidgetDataStore?, Error?) -> Void)) {

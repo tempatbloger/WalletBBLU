@@ -97,7 +97,11 @@ object MarketAPI {
             Log.d(TAG, "Raw response from $source: $jsonResponse")
             
             val parsedResult = if (jsonResponse != null) {
-                parseJSONBasedOnSource(jsonResponse, source, endPointKey)
+                if (source == "RabidRabbit") {
+                    parseRabidRabbitResponse(jsonResponse, endPointKey)
+                } else {
+                    parseJSONBasedOnSource(jsonResponse, source, endPointKey)
+                }
             } else null
             
             val totalDuration = System.currentTimeMillis() - startTime
@@ -129,6 +133,7 @@ object MarketAPI {
                 "CoinGecko" -> "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${endPointKey.lowercase()}"
                 "BNR" -> "https://www.bnr.ro/nbrfxrates.xml"
                 "Kraken" -> "https://api.kraken.com/0/public/Ticker?pair=XXBTZ${endPointKey.uppercase()}"
+                "RabidRabbit" -> "https://rabid-rabbit.org/api/public/v1/ticker?format=json"
                 "CoinDesk" -> "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${endPointKey.uppercase()}"
                 else -> "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${endPointKey.uppercase()}"
             }
@@ -155,6 +160,73 @@ object MarketAPI {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing price", e)
+            null
+        }
+    }
+    
+    private suspend fun parseRabidRabbitResponse(jsonString: String, endPointKey: String): String? {
+        return try {
+            val json = JSONObject(jsonString)
+            val bbluUsdtPair = json.getJSONObject("BBLU_USDT")
+            val lastPrice = bbluUsdtPair.getDouble("last_price")
+            
+            // For USDT or USD, return the price directly (USDT is pegged to USD)
+            if (endPointKey.uppercase() == "USDT" || endPointKey.uppercase() == "USD") {
+                return lastPrice.toString()
+            }
+            
+            // For other currencies, convert USD to target currency
+            // Try CoinGecko exchange rates API first
+            try {
+                val exchangeRatesUrl = "https://api.coingecko.com/api/v3/exchange_rates"
+                val exchangeRequest = Request.Builder().url(exchangeRatesUrl).build()
+                val exchangeResponse = withContext(Dispatchers.IO) { client.newCall(exchangeRequest).execute() }
+                
+                if (exchangeResponse.isSuccessful) {
+                    val exchangeJsonString = exchangeResponse.body?.string()
+                    if (exchangeJsonString != null) {
+                        val exchangeJson = JSONObject(exchangeJsonString)
+                        val rates = exchangeJson.getJSONObject("rates")
+                        val targetRate = rates.optJSONObject(endPointKey.lowercase())
+                        val usdToTargetRate = targetRate?.optDouble("value")
+                        
+                        if (usdToTargetRate != null && usdToTargetRate > 0) {
+                            val finalRate = lastPrice * usdToTargetRate
+                            return finalRate.toString()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to get exchange rate from CoinGecko, trying fallback", e)
+            }
+            
+            // Fallback: try exchangerate-api
+            try {
+                val fallbackUrl = "https://api.exchangerate-api.com/v4/latest/USD"
+                val fallbackRequest = Request.Builder().url(fallbackUrl).build()
+                val fallbackResponse = withContext(Dispatchers.IO) { client.newCall(fallbackRequest).execute() }
+                
+                if (fallbackResponse.isSuccessful) {
+                    val fallbackJsonString = fallbackResponse.body?.string()
+                    if (fallbackJsonString != null) {
+                        val fallbackJson = JSONObject(fallbackJsonString)
+                        val rates = fallbackJson.getJSONObject("rates")
+                        val usdToTargetRate = rates.optDouble(endPointKey.uppercase())
+                        
+                        if (usdToTargetRate > 0) {
+                            val finalRate = lastPrice * usdToTargetRate
+                            return finalRate.toString()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get exchange rate from fallback API", e)
+            }
+            
+            Log.e(TAG, "Could not convert USD to $endPointKey")
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing RabidRabbit response", e)
             null
         }
     }

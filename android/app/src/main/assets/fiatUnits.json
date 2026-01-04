@@ -2,7 +2,7 @@
     "USD": {
         "endPointKey": "USD",
         "locale": "en-US",
-        "source": "Kraken",
+        "source": "RabidRabbit",
         "symbol": "$",
         "country": "United States (US Dollar)"
     },
