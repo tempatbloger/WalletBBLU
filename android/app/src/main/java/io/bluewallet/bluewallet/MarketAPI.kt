@@ -1,4 +1,4 @@
-package io.bluewallet.bluewallet
+package io.bitcoinblu.bitcoinblu
 
 import android.content.Context
 import android.util.Log
@@ -133,7 +133,7 @@ object MarketAPI {
                 "CoinGecko" -> "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${endPointKey.lowercase()}"
                 "BNR" -> "https://www.bnr.ro/nbrfxrates.xml"
                 "Kraken" -> "https://api.kraken.com/0/public/Ticker?pair=XXBTZ${endPointKey.uppercase()}"
-                "RabidRabbit" -> "https://rabid-rabbit.org/api/public/v1/ticker?format=json"
+                "RabidRabbit" -> "https://www.bitcoin-blu.org/api/bblu/averageprice/v1/"
                 "CoinDesk" -> "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${endPointKey.uppercase()}"
                 else -> "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${endPointKey.uppercase()}"
             }
@@ -167,12 +167,11 @@ object MarketAPI {
     private suspend fun parseRabidRabbitResponse(jsonString: String, endPointKey: String): String? {
         return try {
             val json = JSONObject(jsonString)
-            val bbluUsdtPair = json.getJSONObject("BBLU_USDT")
-            val lastPrice = bbluUsdtPair.getDouble("last_price")
+            val averagePrice = json.getDouble("average_price")
             
-            // For USDT or USD, return the price directly (USDT is pegged to USD)
+            // For USDT or USD, return the average price directly
             if (endPointKey.uppercase() == "USDT" || endPointKey.uppercase() == "USD") {
-                return lastPrice.toString()
+                return averagePrice.toString()
             }
             
             // For other currencies, convert USD to target currency
@@ -191,7 +190,7 @@ object MarketAPI {
                         val usdToTargetRate = targetRate?.optDouble("value")
                         
                         if (usdToTargetRate != null && usdToTargetRate > 0) {
-                            val finalRate = lastPrice * usdToTargetRate
+                            val finalRate = averagePrice * usdToTargetRate
                             return finalRate.toString()
                         }
                     }
@@ -214,7 +213,7 @@ object MarketAPI {
                         val usdToTargetRate = rates.optDouble(endPointKey.uppercase())
                         
                         if (usdToTargetRate > 0) {
-                            val finalRate = lastPrice * usdToTargetRate
+                            val finalRate = averagePrice * usdToTargetRate
                             return finalRate.toString()
                         }
                     }

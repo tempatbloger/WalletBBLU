@@ -1,4 +1,4 @@
-package io.bluewallet.bluewallet
+package io.bitcoinblu.bitcoinblu
 
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -42,7 +42,7 @@ class MainActivity : ReactActivity() {
     }
     
     private fun checkAndShowCacheClearedAlert() {
-        val sharedPref = getSharedPreferences("group.io.bluewallet.bluewallet", Context.MODE_PRIVATE)
+        val sharedPref = getSharedPreferences("group.io.bitcoinblu.bitcoinblu", Context.MODE_PRIVATE)
         val shouldShowAlert = sharedPref.getBoolean("shouldShowCacheClearedAlert", false)
         
         if (shouldShowAlert) {

@@ -1,4 +1,4 @@
-package io.bluewallet.bluewallet
+package io.bitcoinblu.bitcoinblu
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName

@@ -1,4 +1,4 @@
-package io.bluewallet.bluewallet
+package io.bitcoinblu.bitcoinblu
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

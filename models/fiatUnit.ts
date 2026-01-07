@@ -80,13 +80,13 @@ interface CoinpaprikaResponse {
   };
 }
 
-interface RabidRabbitResponse {
-  [pair: string]: {
-    last_price: number;
-    base_volume?: number;
-    quote_volume?: number;
-    is_frozen?: number;
+interface BBLUAveragePriceResponse {
+  timestamp: string;
+  sources: {
+    [source: string]: number;
   };
+  average_price: number;
+  average_price_decimal: string;
 }
 
 const RateExtractors = {
@@ -223,18 +223,16 @@ const RateExtractors = {
 
   RabidRabbit: async (ticker: string): Promise<number> => {
     try {
-      // Fetch BBLU price in USDT from RabidRabbit API
-      const json = (await fetchRate('https://rabid-rabbit.org/api/public/v1/ticker?format=json')) as RabidRabbitResponse;
-      const bbluUsdtPair = json?.['BBLU_USDT'];
-      if (!bbluUsdtPair || typeof bbluUsdtPair.last_price !== 'number') {
-        throw new Error('BBLU_USDT pair not found or invalid');
+      // Fetch BBLU average price from Bitcoin-Blu API
+      const json = (await fetchRate('https://www.bitcoin-blu.org/api/bblu/averageprice/v1/')) as BBLUAveragePriceResponse;
+      const averagePrice = json?.average_price;
+      if (typeof averagePrice !== 'number' || !(averagePrice >= 0)) {
+        throw new Error('average_price not found or invalid');
       }
-      const bbluUsdtPrice = Number(bbluUsdtPair.last_price);
-      if (!(bbluUsdtPrice >= 0)) throw new Error('Invalid BBLU_USDT price received');
 
-      // For USDT or USD, return the price directly (USDT is pegged to USD, so 1 USDT ≈ 1 USD)
+      // For USDT or USD, return the average price directly
       if (ticker.toUpperCase() === 'USDT' || ticker.toUpperCase() === 'USD') {
-        return bbluUsdtPrice;
+        return averagePrice;
       }
 
       // For other currencies, convert USD to the target currency using CoinGecko
@@ -247,7 +245,7 @@ const RateExtractors = {
         const targetCurrency = ticker.toLowerCase();
         const usdToTargetRate = usdToTargetJson?.rates?.[targetCurrency]?.value;
         if (typeof usdToTargetRate === 'number' && usdToTargetRate > 0) {
-          return bbluUsdtPrice * usdToTargetRate;
+          return averagePrice * usdToTargetRate;
         }
       } catch (conversionError) {
         // Fallback: try using exchangerate-api for fiat currency conversion
@@ -257,7 +255,7 @@ const RateExtractors = {
           )) as { rates?: { [key: string]: number } };
           const usdToCurrencyRate = usdToCurrencyJson?.rates?.[ticker.toUpperCase()];
           if (typeof usdToCurrencyRate === 'number' && usdToCurrencyRate > 0) {
-            return bbluUsdtPrice * usdToCurrencyRate;
+            return averagePrice * usdToCurrencyRate;
           }
         } catch (fallbackError) {
           // If all conversions fail, throw original error

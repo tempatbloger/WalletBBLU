@@ -31,7 +31,7 @@ class MarketAPI {
         case "Kraken":
             return "https://api.kraken.com/0/public/Ticker?pair=XXBTZ\(endPointKey.uppercased())"
         case "RabidRabbit":
-            return "https://rabid-rabbit.org/api/public/v1/ticker?format=json"
+            return "https://www.bitcoin-blu.org/api/bblu/averageprice/v1/"
         default: // CoinDesk
             return "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=\(endPointKey)"
         }
@@ -202,14 +202,13 @@ class MarketAPI {
      
      private static func handleRabidRabbitData(data: Data, endPointKey: String) async throws -> WidgetDataStore? {
          guard let json = (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any],
-               let bbluUsdtPair = json["BBLU_USDT"] as? [String: Any],
-               let lastPrice = bbluUsdtPair["last_price"] as? Double else {
+               let averagePrice = json["average_price"] as? Double else {
              throw CurrencyError(errorDescription: "Data formatting error for RabidRabbit source")
          }
          
-         var finalRate = lastPrice
+         var finalRate = averagePrice
          
-         // For USDT or USD, use the price directly (USDT is pegged to USD)
+         // For USDT or USD, use the average price directly
          if endPointKey.uppercased() == "USDT" || endPointKey.uppercased() == "USD" {
              let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
              return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
@@ -223,7 +222,7 @@ class MarketAPI {
                 let rates = exchangeJson["rates"] as? [String: Any],
                 let targetRate = rates[endPointKey.lowercased()] as? [String: Any],
                 let usdToTargetRate = targetRate["value"] as? Double {
-                 finalRate = lastPrice * usdToTargetRate
+                 finalRate = averagePrice * usdToTargetRate
                  let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
                  return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
              }
@@ -235,7 +234,7 @@ class MarketAPI {
                  if let fallbackJson = try? JSONSerialization.jsonObject(with: fallbackData, options: []) as? [String: Any],
                     let rates = fallbackJson["rates"] as? [String: Double],
                     let usdToTargetRate = rates[endPointKey.uppercased()] {
-                     finalRate = lastPrice * usdToTargetRate
+                     finalRate = averagePrice * usdToTargetRate
                      let lastUpdatedString = ISO8601DateFormatter().string(from: Date())
                      return WidgetDataStore(rate: String(finalRate), lastUpdate: lastUpdatedString, rateDouble: finalRate)
                  }

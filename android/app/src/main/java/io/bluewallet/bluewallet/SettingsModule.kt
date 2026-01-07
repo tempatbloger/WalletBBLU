@@ -1,4 +1,4 @@
-package io.bluewallet.bluewallet
+package io.bitcoinblu.bitcoinblu
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -12,7 +12,7 @@ import java.util.UUID
 class SettingsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private val sharedPref: SharedPreferences = reactContext.getSharedPreferences(
-        "group.io.bluewallet.bluewallet",
+        "group.io.bitcoinblu.bitcoinblu",
         Context.MODE_PRIVATE
     )
     
