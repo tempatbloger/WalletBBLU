@@ -138,8 +138,10 @@ export class SegwitP2SHWallet extends LegacyWallet {
         output.address = changeAddress;
       }
 
+      // Convert address to script to avoid bitcoinjs-lib's internal address validation
+      const script = bitcoin.address.toOutputScript(output.address, bbluNetwork);
       const outputData = {
-        address: output.address,
+        script,
         value: BigInt(output.value),
       };
 

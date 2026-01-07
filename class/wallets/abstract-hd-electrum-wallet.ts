@@ -1280,10 +1280,14 @@ export class AbstractHDElectrumWallet extends AbstractHDWallet {
         // ^^^ trusting that notification transaction is in place
       }
 
+      // Convert address to script to avoid bitcoinjs-lib's internal address validation
+      // Use provided script if available, otherwise convert address to script
+      const script = (output as any).script?.hex 
+        ? hexToUint8Array((output as any).script.hex) 
+        : bitcoin.address.toOutputScript(output.address!, bbluNetwork);
+      
       psbt.addOutput({
-        address: output.address,
-        // @ts-ignore types from bitcoinjs are not exported so we cant define outputData separately and add fields conditionally (either address or script should be present)
-        script: output.script?.hex ? hexToUint8Array(output.script.hex) : undefined,
+        script,
         value: BigInt(output.value),
         bip32Derivation:
           change && path && pubkey && this.segwitType !== 'p2tr'

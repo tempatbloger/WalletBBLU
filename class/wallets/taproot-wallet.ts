@@ -119,8 +119,10 @@ export class TaprootWallet extends SegwitBech32Wallet {
     outputs.forEach(output => {
       // if output has no address - this is change output
       if (!output.address) output.address = changeAddress;
+      // Convert address to script to avoid bitcoinjs-lib's internal address validation
+      const script = bitcoin.address.toOutputScript(output.address!, bbluNetwork);
       psbt.addOutput({
-        address: output.address!,
+        script,
         value: BigInt(output.value),
       });
     });

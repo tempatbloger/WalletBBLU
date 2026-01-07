@@ -11,6 +11,7 @@ import * as mn from 'electrum-mnemonic';
 import * as BlueElectrum from '../../blue_modules/BlueElectrum';
 import ecc from '../../blue_modules/noble_ecc';
 import { decodeUR } from '../../blue_modules/ur';
+import { bbluNetwork } from '../../blue_modules/bblu-network';
 import { AbstractHDElectrumWallet } from './abstract-hd-electrum-wallet';
 import { CreateTransactionResult, CreateTransactionTarget, CreateTransactionUtxo } from './types';
 import {
@@ -1001,15 +1002,21 @@ export class MultisigHDWallet extends AbstractHDElectrumWallet {
         address = changeAddress;
       }
 
+      // Convert address to script to avoid bitcoinjs-lib's internal address validation
+      const script = bitcoin.address.toOutputScript(address, bbluNetwork);
+      
       let outputData: Parameters<typeof psbt.addOutput>[0] = {
-        address,
+        script,
         value: BigInt(output.value),
       };
 
       if (change) {
+        const changeData = this._getOutputDataForChange(address);
+        // If changeData has script, use it; otherwise keep our converted script
         outputData = {
           ...outputData,
-          ...this._getOutputDataForChange(address),
+          ...changeData,
+          script: (changeData as any).script || script,
         };
       }
 
