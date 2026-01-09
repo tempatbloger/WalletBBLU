@@ -16,7 +16,7 @@
 import { Network } from 'bitcoinjs-lib';
 
 export const bbluNetwork: Network = {
-  messagePrefix: '\x18BitcoinBlu Signed Message:\n',
+  messagePrefix: '\x1ABitcoinBlu Signed Message:\n',
   bech32: 'bb',
   bip32: {
     public: 0x0488b31f,
