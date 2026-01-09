@@ -111,7 +111,7 @@ export class AbstractWallet {
    */
   getLabel(): string {
     if (this.label.trim().length === 0) {
-      return 'Wallet';
+      return 'BBLU Wallet';
     }
     return this.label;
   }
