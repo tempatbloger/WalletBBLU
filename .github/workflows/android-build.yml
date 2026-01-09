@@ -7,25 +7,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install deps
+      - name: Install npm dependencies
         run: npm install
 
-      - name: Build APK
+      - name: Create assets directory
+        run: mkdir -p android/app/src/main/assets
+
+      - name: Generate JS bundle
+        run: |
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res/
+
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
@@ -34,5 +49,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: WalletBBLU-debug
+          name: WalletBBLU-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
